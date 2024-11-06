@@ -1,0 +1,13 @@
+[package]
+name = "gi-daily-checkin-bot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = { version = "0.4.38", features = ["serde", "clock"] }
+rand = "0.8.5"
+reqwest = { version = "0.12.9", features = ["cookies", "default", "json"] }
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
+tokio = { version = "1.41.0", features = ["macros", "rt-multi-thread"] }
+clap = { version = "4.0", features = ["derive"] }
