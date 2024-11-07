@@ -1,3 +1,7 @@
+#![allow(unused_imports)]
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::process::Command;
 
 use chrono::{DateTime, Local};
@@ -66,26 +70,34 @@ pub fn config_scheduler(
         "$Setting = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -WakeToRun -RunOnlyIfNetworkAvailable -MultipleInstances Parallel -Priority 3 -RestartCount 30 -RestartInterval (New-TimeSpan -Minutes 1);\n"
     );
 
+    powershell_script.push_str(
+        "$Principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest;\n"
+    );
+
     powershell_script.push_str(&format!(
-        "Register-ScheduledTask -Force -TaskName '{}' -Trigger $Time -Action $Action -Settings $Setting -Description 'Genshin Daily Check-In Bot' -RunLevel Highest;\n",
+        "Register-ScheduledTask -Force -TaskName '{}' -Trigger $Time -Action $Action -Settings $Setting -Principal $Principal -Description 'Genshin Hoyolab Daily Check-In Bot';\n",
         config.scheduler_name
     ));
 
-    let status = Command::new("powershell")
-        .args(&[
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            &powershell_script,
-        ])
-        .status()?;
+    #[cfg(windows)]
+    {
+        let status = Command::new("powershell")
+            .args(&[
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                &powershell_script,
+            ])
+            .creation_flags(0x08000000)
+            .status()?;
 
-    if !status.success() {
-        eprintln!("PERMISSION ERROR: please run as administrator to enable task scheduling");
-        std::process::exit(1);
-    } else {
-        println!("Program scheduled daily!");
+        if !status.success() {
+            eprintln!("PERMISSION ERROR: please run as administrator to enable task scheduling");
+            std::process::exit(1);
+        } else {
+            println!("Program scheduled daily!");
+        }
     }
 
     Ok(())
